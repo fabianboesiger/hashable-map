@@ -2,5 +2,11 @@
 name = "hashable-map"
 version = "0.1.0"
 edition = "2021"
+authors = ["Fabian Bösiger"]
+description = "A wrapper for HashMap that implements Hash"
+readme = "README.md"
+repository = "https://github.com/fabianboesiger/hashable-map"
+keywords = ["hashmap", "hash", "hashable", "wrapper"]
+categories = ["data-structures"]
 
 [dependencies]

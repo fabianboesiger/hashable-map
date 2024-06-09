@@ -1,6 +1,6 @@
 # Hashable Map
 
-This is a simple wrapper around `std::collections::HashMap` that implements `Hash`.
+This is a simple wrapper around `std::collections::HashMap` without any additional dependencies that implements `Hash`.
 The `Hash` implementation respects the property 
 
 ```
