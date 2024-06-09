@@ -8,5 +8,6 @@ readme = "README.md"
 repository = "https://github.com/fabianboesiger/hashable-map"
 keywords = ["hashmap", "hash", "hashable", "wrapper"]
 categories = ["data-structures"]
+license = "MIT OR Apache-2.0"
 
 [dependencies]
