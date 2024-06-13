@@ -1,4 +1,8 @@
-use std::{collections::HashMap, hash::{BuildHasher, Hash, Hasher, RandomState}, ops::{Deref, DerefMut}};
+use std::{
+    collections::HashMap,
+    hash::{BuildHasher, Hash, Hasher, RandomState},
+    ops::{Deref, DerefMut},
+};
 
 #[derive(Clone, Debug, Default)]
 pub struct HashableMap<K, V, S = RandomState>(HashMap<K, V, S>);
@@ -43,9 +47,9 @@ impl<K, V, S> From<HashMap<K, V, S>> for HashableMap<K, V, S> {
     }
 }
 
-impl<K, V, S> Into<HashMap<K, V, S>> for HashableMap<K, V, S> {
-    fn into(self) -> HashMap<K, V, S> {
-        self.0
+impl<T, S> From<HashableMap<T, S>> for HashMap<T, S> {
+    fn from(value: HashableMap<T, S>) -> HashMap<T, S> {
+        value.0
     }
 }
 
@@ -54,70 +58,153 @@ where
     K: Hash,
     V: Hash,
     S: BuildHasher<Hasher = D>,
-    D: Hasher + Default
+    D: Hasher + Default,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let hash = self.iter().map(|(k, v)| {
-            let mut hasher = D::default();
-            k.hash(&mut hasher);
-            v.hash(&mut hasher);
-            hasher.finish()
-        }).fold(0, u64::wrapping_add);
+        let hash = self
+            .iter()
+            .map(|(k, v)| {
+                let mut hasher = D::default();
+                k.hash(&mut hasher);
+                v.hash(&mut hasher);
+                hasher.finish()
+            })
+            .fold(0, u64::wrapping_add);
 
         state.write_u64(hash);
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use std::hash::DefaultHasher;
+pub(crate) mod tests {
+    use ahash::AHasher;
+    use fnv::FnvBuildHasher;
     use fxhash::FxBuildHasher;
+    use gxhash::GxBuildHasher;
+    use rand::{distributions::{Distribution, Standard}, thread_rng};
+    use std::hash::{BuildHasherDefault, DefaultHasher};
+    use rand::prelude::SliceRandom;
 
     use super::*;
 
     #[test]
-    fn random_state() {
-        let mut map_a = HashableMap::<_, _, RandomState>::default();
-        map_a.insert(1, "1");
-        map_a.insert(2, "2");
-        let mut map_b = HashableMap::<_, _, RandomState>::default();
-        map_b.insert(1, "1");
-        map_b.insert(2, "2");
-        let mut map_c = HashableMap::<_, _, RandomState>::default();
-        map_c.insert(1, "1");
-        map_c.insert(3, "3");
-
-        let mut hasher_a = DefaultHasher::new();
-        map_a.hash(&mut hasher_a);
-        let mut hasher_b = DefaultHasher::new();
-        map_b.hash(&mut hasher_b);
-        let mut hasher_c = DefaultHasher::new();
-        map_c.hash(&mut hasher_c);
-
-        assert_eq!(hasher_a.finish(), hasher_b.finish());
-        assert_ne!(hasher_a.finish(), hasher_c.finish());
+    fn insertion_order_random_state() {
+        insertion_order::<RandomState, _>()
     }
 
     #[test]
-    fn fx_build_hasher() {
-        let mut map_a = HashableMap::<_, _, FxBuildHasher>::default();
-        map_a.insert(1, "1");
-        map_a.insert(2, "2");
-        let mut map_b = HashableMap::<_, _, FxBuildHasher>::default();
-        map_b.insert(1, "1");
-        map_b.insert(2, "2");
-        let mut map_c = HashableMap::<_, _, FxBuildHasher>::default();
-        map_c.insert(1, "1");
-        map_c.insert(3, "3");
+    fn insertion_order_fx_build_hasher() {
+        insertion_order::<FxBuildHasher, _>()
+    }
 
+    #[test]
+    fn insertion_order_gx_build_hasher() {
+        insertion_order::<GxBuildHasher, _>()
+    }
+
+    #[test]
+    fn insertion_order_fnv_build_hasher() {
+        insertion_order::<FnvBuildHasher, _>()
+    }
+
+    #[test]
+    fn insertion_order_ahash_build_hasher() {
+        insertion_order::<BuildHasherDefault<AHasher>, _>()
+    }
+
+    fn insertion_order<B: BuildHasher<Hasher = H> + Default, H: Hasher + Default>() {
+        let values = generate_random_values::<i32, 128>();
+        let values_shuffled = shuffle(&values);
+        let values_other = generate_random_values::<i32, 128>();
+
+        assert_ne!(values, values_shuffled);
+        assert_ne!(values, values_other);
+        assert_ne!(values_shuffled, values_other);
+
+        let mut a = HashableMap::<_, _, B>::default();
+        a.extend(values.iter().copied().map(|k| (k, k)));
+        let mut b = HashableMap::<_, _, B>::default();
+        b.extend(values_shuffled.iter().copied().map(|k| (k, k)));
+        let mut c = HashableMap::<_, _, B>::default();
+        c.extend(values_other.iter().copied().map(|k| (k, k)));
+
+        assert_hash_eq(&a, &b);
+        assert_hash_ne(&a, &c);
+        assert_hash_ne(&b, &c)
+    }
+
+    #[test]
+    fn same_keys_different_values_gx_build_hasher() {
+        same_keys_different_values::<RandomState, _>()
+    }
+
+    fn same_keys_different_values<B: BuildHasher<Hasher = H> + Default, H: Hasher + Default>() {
+        let keys = generate_random_values::<i32, 128>();
+        let values1 = generate_random_values::<i32, 128>();
+        let values2 = generate_random_values::<i32, 128>();
+
+        assert_ne!(values1, values2);
+
+        let mut a = HashableMap::<_, _, B>::default();
+        a.extend(keys.iter().copied().zip(values1.iter().copied()));
+        let mut b = HashableMap::<_, _, B>::default();
+        b.extend(keys.iter().copied().zip(values2.iter().copied())); 
+
+        assert_hash_ne(&a, &b)
+    }
+
+    #[test]
+    fn different_keys_same_values_gx_build_hasher() {
+        different_keys_same_values::<RandomState, _>()
+    }
+
+    fn different_keys_same_values<B: BuildHasher<Hasher = H> + Default, H: Hasher + Default>() {
+        let keys1 = generate_random_values::<i32, 128>();
+        let keys2 = generate_random_values::<i32, 128>();
+        let values = generate_random_values::<i32, 128>();
+
+        assert_ne!(keys1, keys2);
+
+        let mut a = HashableMap::<_, _, B>::default();
+        a.extend(keys1.iter().copied().zip(values.iter().copied()));
+        let mut b = HashableMap::<_, _, B>::default();
+        b.extend(keys2.iter().copied().zip(values.iter().copied())); 
+
+        assert_hash_ne(&a, &b)
+    }
+
+    pub(crate) fn generate_random_values<T, const N: usize>() -> [T; N]
+    where
+        Standard: Distribution<[T; N]>
+    {
+        rand::random()
+    }
+
+    pub(crate) fn shuffle<T, const N: usize>(values: &[T; N]) -> [T; N]
+    where
+        T: Clone
+    {
+        let mut values = values.clone();
+        values.shuffle(&mut thread_rng());
+        values
+    }
+
+    pub(crate) fn assert_hash_eq<H: Hash>(a: &H, b: &H) {
         let mut hasher_a = DefaultHasher::new();
-        map_a.hash(&mut hasher_a);
+        a.hash(&mut hasher_a);
         let mut hasher_b = DefaultHasher::new();
-        map_b.hash(&mut hasher_b);
-        let mut hasher_c = DefaultHasher::new();
-        map_c.hash(&mut hasher_c);
-
+        b.hash(&mut hasher_b);
+    
         assert_eq!(hasher_a.finish(), hasher_b.finish());
-        assert_ne!(hasher_a.finish(), hasher_c.finish());
+    }
+
+    pub(crate) fn assert_hash_ne<H: Hash>(x: &H, y: &H) {
+        let mut hasher_x = DefaultHasher::new();
+        x.hash(&mut hasher_x);
+        let mut hasher_y = DefaultHasher::new();
+        y.hash(&mut hasher_y);
+    
+        assert_ne!(hasher_x.finish(), hasher_y.finish());
     }
 }
+

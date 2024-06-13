@@ -1,6 +1,6 @@
 [package]
 name = "hashable-map"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Fabian Bösiger"]
 description = "Wrappers for HashMap and HashSet that implement Hash"
@@ -11,4 +11,8 @@ categories = ["data-structures"]
 license = "MIT OR Apache-2.0"
 
 [dev-dependencies]
+rand = { version = "0.8", features = ["min_const_gen"] }
 fxhash = "0.2"
+gxhash = "3.1"
+fnv = "1.0"
+ahash = "0.8"
