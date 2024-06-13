@@ -1,13 +1,14 @@
 [package]
 name = "hashable-map"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Fabian Bösiger"]
-description = "A wrapper for HashMap that implements Hash"
+description = "Wrappers for HashMap and HashSet that implement Hash"
 readme = "README.md"
 repository = "https://github.com/fabianboesiger/hashable-map"
-keywords = ["hashmap", "hash", "hashable", "wrapper"]
+keywords = ["hashmap", "hashset", "hash", "hashable", "wrapper"]
 categories = ["data-structures"]
 license = "MIT OR Apache-2.0"
 
-[dependencies]
+[dev-dependencies]
+fxhash = "0.2"
