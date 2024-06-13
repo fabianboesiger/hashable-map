@@ -81,9 +81,12 @@ pub(crate) mod tests {
     use fnv::FnvBuildHasher;
     use fxhash::FxBuildHasher;
     use gxhash::GxBuildHasher;
-    use rand::{distributions::{Distribution, Standard}, thread_rng};
-    use std::hash::{BuildHasherDefault, DefaultHasher};
     use rand::prelude::SliceRandom;
+    use rand::{
+        distributions::{Distribution, Standard},
+        thread_rng,
+    };
+    use std::hash::{BuildHasherDefault, DefaultHasher};
 
     use super::*;
 
@@ -148,7 +151,7 @@ pub(crate) mod tests {
         let mut a = HashableMap::<_, _, B>::default();
         a.extend(keys.iter().copied().zip(values1.iter().copied()));
         let mut b = HashableMap::<_, _, B>::default();
-        b.extend(keys.iter().copied().zip(values2.iter().copied())); 
+        b.extend(keys.iter().copied().zip(values2.iter().copied()));
 
         assert_hash_ne(&a, &b)
     }
@@ -168,21 +171,21 @@ pub(crate) mod tests {
         let mut a = HashableMap::<_, _, B>::default();
         a.extend(keys1.iter().copied().zip(values.iter().copied()));
         let mut b = HashableMap::<_, _, B>::default();
-        b.extend(keys2.iter().copied().zip(values.iter().copied())); 
+        b.extend(keys2.iter().copied().zip(values.iter().copied()));
 
         assert_hash_ne(&a, &b)
     }
 
     pub(crate) fn generate_random_values<T, const N: usize>() -> [T; N]
     where
-        Standard: Distribution<[T; N]>
+        Standard: Distribution<[T; N]>,
     {
         rand::random()
     }
 
     pub(crate) fn shuffle<T, const N: usize>(values: &[T; N]) -> [T; N]
     where
-        T: Clone
+        T: Clone,
     {
         let mut values = values.clone();
         values.shuffle(&mut thread_rng());
@@ -194,7 +197,7 @@ pub(crate) mod tests {
         a.hash(&mut hasher_a);
         let mut hasher_b = DefaultHasher::new();
         b.hash(&mut hasher_b);
-    
+
         assert_eq!(hasher_a.finish(), hasher_b.finish());
     }
 
@@ -203,8 +206,7 @@ pub(crate) mod tests {
         x.hash(&mut hasher_x);
         let mut hasher_y = DefaultHasher::new();
         y.hash(&mut hasher_y);
-    
+
         assert_ne!(hasher_x.finish(), hasher_y.finish());
     }
 }
-
