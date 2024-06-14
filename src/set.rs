@@ -73,14 +73,26 @@ where
     }
 }
 
+impl<T, S> PartialEq for HashableSet<T, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<T, S> Eq for HashableSet<T, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
     use std::hash::BuildHasherDefault;
-
-    use ahash::AHasher;
-    use fnv::FnvBuildHasher;
-    use fxhash::FxBuildHasher;
-    use gxhash::GxBuildHasher;
 
     use super::*;
 
@@ -93,22 +105,23 @@ pub(crate) mod tests {
 
     #[test]
     fn insertion_order_fx_build_hasher() {
-        insertion_order::<FxBuildHasher, _>()
+        insertion_order::<fxhash::FxBuildHasher, _>()
     }
 
+    #[cfg(all(target_feature = "aes", feature = "sse2"))]
     #[test]
     fn insertion_order_gx_build_hasher() {
-        insertion_order::<GxBuildHasher, _>()
+        insertion_order::<gxhash::GxBuildHasher, _>()
     }
 
     #[test]
     fn insertion_order_fnv_build_hasher() {
-        insertion_order::<FnvBuildHasher, _>()
+        insertion_order::<fnv::FnvBuildHasher, _>()
     }
 
     #[test]
     fn insertion_order_ahash_build_hasher() {
-        insertion_order::<BuildHasherDefault<AHasher>, _>()
+        insertion_order::<BuildHasherDefault<ahash::AHasher>, _>()
     }
 
     fn insertion_order<B: BuildHasher<Hasher = H> + Default, H: Hasher + Default>() {

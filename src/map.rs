@@ -75,12 +75,27 @@ where
     }
 }
 
+impl<K, V, S> PartialEq for HashableMap<K, V, S>
+where
+    K: Eq + Hash,
+    V: PartialEq,
+    S: BuildHasher,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<K, V, S> Eq for HashableMap<K, V, S>
+where
+    K: Eq + Hash,
+    V: Eq,
+    S: BuildHasher,
+{
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
-    use ahash::AHasher;
-    use fnv::FnvBuildHasher;
-    use fxhash::FxBuildHasher;
-    use gxhash::GxBuildHasher;
     use rand::prelude::SliceRandom;
     use rand::{
         distributions::{Distribution, Standard},
@@ -97,22 +112,23 @@ pub(crate) mod tests {
 
     #[test]
     fn insertion_order_fx_build_hasher() {
-        insertion_order::<FxBuildHasher, _>()
+        insertion_order::<fxhash::FxBuildHasher, _>()
     }
 
+    #[cfg(all(target_feature = "aes", feature = "sse2"))]
     #[test]
     fn insertion_order_gx_build_hasher() {
-        insertion_order::<GxBuildHasher, _>()
+        insertion_order::<gxhash::GxBuildHasher, _>()
     }
 
     #[test]
     fn insertion_order_fnv_build_hasher() {
-        insertion_order::<FnvBuildHasher, _>()
+        insertion_order::<fnv::FnvBuildHasher, _>()
     }
 
     #[test]
     fn insertion_order_ahash_build_hasher() {
-        insertion_order::<BuildHasherDefault<AHasher>, _>()
+        insertion_order::<BuildHasherDefault<ahash::AHasher>, _>()
     }
 
     fn insertion_order<B: BuildHasher<Hasher = H> + Default, H: Hasher + Default>() {
