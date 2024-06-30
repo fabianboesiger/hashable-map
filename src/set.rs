@@ -108,12 +108,6 @@ pub(crate) mod tests {
         insertion_order::<fxhash::FxBuildHasher, _>()
     }
 
-    #[cfg(all(target_feature = "aes", feature = "sse2"))]
-    #[test]
-    fn insertion_order_gx_build_hasher() {
-        insertion_order::<gxhash::GxBuildHasher, _>()
-    }
-
     #[test]
     fn insertion_order_fnv_build_hasher() {
         insertion_order::<fnv::FnvBuildHasher, _>()

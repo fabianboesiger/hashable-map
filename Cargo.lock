@@ -54,22 +54,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "gxhash"
-version = "3.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a197c9b654827513cf53842c5c6d3da2b4b35a785f8e0eff78bdf8e445aba1bb"
-dependencies = [
- "rustversion",
-]
-
-[[package]]
 name = "hashable-map"
 version = "0.2.2"
 dependencies = [
  "ahash",
  "fnv",
  "fxhash",
- "gxhash",
  "rand",
 ]
 
@@ -138,12 +128,6 @@ checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
 ]
-
-[[package]]
-name = "rustversion"
-version = "1.0.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "955d28af4278de8121b7ebeb796b6a45735dc01436d898801014aced2773a3d6"
 
 [[package]]
 name = "syn"

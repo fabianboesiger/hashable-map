@@ -15,6 +15,3 @@ rand = { version = "0.8", features = ["min_const_gen"] }
 fxhash = "0.2"
 fnv = "1.0"
 ahash = "0.8"
-
-[target.'cfg(all(target_feature = "aes", feature = "sse2"))'.dev-dependencies]
-gxhash = "3.1"
