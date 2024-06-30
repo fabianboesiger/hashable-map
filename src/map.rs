@@ -1,124 +1,133 @@
 use std::{
-    collections::HashMap,
     hash::{BuildHasher, Hash, Hasher, RandomState},
     ops::{Deref, DerefMut},
 };
 
-#[derive(Clone, Debug, Default)]
-pub struct HashableMap<K, V, S = RandomState>(HashMap<K, V, S>);
+macro_rules! make_hashable_map {
+    ($hash_map_impl:ident) => {
+        #[derive(Clone, Debug, Default)]
+        pub struct HashableMap<K, V, S = RandomState>($hash_map_impl<K, V, S>);
 
-impl<K, V> HashableMap<K, V> {
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
+        impl<K, V> HashableMap<K, V> {
+            pub fn new() -> Self {
+                Self($hash_map_impl::new())
+            }
 
-    pub fn with_capacity(capacity: usize) -> Self {
-        Self(HashMap::with_capacity(capacity))
-    }
+            pub fn with_capacity(capacity: usize) -> Self {
+                Self($hash_map_impl::with_capacity(capacity))
+            }
+        }
+
+        impl<K, V, S> HashableMap<K, V, S> {
+            pub fn with_hasher(hash_builder: S) -> Self {
+                Self($hash_map_impl::with_hasher(hash_builder))
+            }
+
+            pub fn with_capacity_and_hasher(capacity: usize, hash_builder: S) -> Self {
+                Self($hash_map_impl::with_capacity_and_hasher(
+                    capacity,
+                    hash_builder,
+                ))
+            }
+        }
+
+        impl<K, V, S> Deref for HashableMap<K, V, S> {
+            type Target = $hash_map_impl<K, V, S>;
+
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+
+        impl<K, V, S> DerefMut for HashableMap<K, V, S> {
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                &mut self.0
+            }
+        }
+
+        impl<K, V, S> From<$hash_map_impl<K, V, S>> for HashableMap<K, V, S> {
+            fn from(value: $hash_map_impl<K, V, S>) -> Self {
+                Self(value)
+            }
+        }
+
+        impl<T, S> From<HashableMap<T, S>> for $hash_map_impl<T, S> {
+            fn from(value: HashableMap<T, S>) -> $hash_map_impl<T, S> {
+                value.0
+            }
+        }
+
+        impl<K, V, S, D> Hash for HashableMap<K, V, S>
+        where
+            K: Hash,
+            V: Hash,
+            S: BuildHasher<Hasher = D>,
+            D: Hasher + Default,
+        {
+            fn hash<H: Hasher>(&self, state: &mut H) {
+                let hash = self
+                    .iter()
+                    .map(|(k, v)| {
+                        let mut hasher = D::default();
+                        k.hash(&mut hasher);
+                        v.hash(&mut hasher);
+                        hasher.finish()
+                    })
+                    .fold(0, u64::wrapping_add);
+
+                state.write_u64(hash);
+            }
+        }
+
+        impl<K, V, S> PartialEq for HashableMap<K, V, S>
+        where
+            K: Eq + Hash,
+            V: PartialEq,
+            S: BuildHasher,
+        {
+            fn eq(&self, other: &Self) -> bool {
+                self.0 == other.0
+            }
+        }
+
+        impl<K, V, S> Eq for HashableMap<K, V, S>
+        where
+            K: Eq + Hash,
+            V: Eq,
+            S: BuildHasher,
+        {
+        }
+
+        #[cfg(feature = "serde")]
+        impl<K, V, S> serde::Serialize for HashableMap<K, V, S>
+        where
+            $hash_map_impl<K, V, S>: serde::Serialize,
+        {
+            fn serialize<Ser>(&self, serializer: Ser) -> Result<Ser::Ok, Ser::Error>
+            where
+                Ser: serde::Serializer,
+            {
+                self.0.serialize(serializer)
+            }
+        }
+
+        #[cfg(feature = "serde")]
+        impl<'de, K, V, S> serde::Deserialize<'de> for HashableMap<K, V, S>
+        where
+            $hash_map_impl<K, V, S>: serde::Deserialize<'de>,
+        {
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                Ok(Self($hash_map_impl::deserialize(deserializer)?))
+            }
+        }
+    };
 }
 
-impl<K, V, S> HashableMap<K, V, S> {
-    pub fn with_hasher(hash_builder: S) -> Self {
-        Self(HashMap::with_hasher(hash_builder))
-    }
-
-    pub fn with_capacity_and_hasher(capacity: usize, hash_builder: S) -> Self {
-        Self(HashMap::with_capacity_and_hasher(capacity, hash_builder))
-    }
-}
-
-impl<K, V, S> Deref for HashableMap<K, V, S> {
-    type Target = HashMap<K, V, S>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<K, V, S> DerefMut for HashableMap<K, V, S> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl<K, V, S> From<HashMap<K, V, S>> for HashableMap<K, V, S> {
-    fn from(value: HashMap<K, V, S>) -> Self {
-        Self(value)
-    }
-}
-
-impl<T, S> From<HashableMap<T, S>> for HashMap<T, S> {
-    fn from(value: HashableMap<T, S>) -> HashMap<T, S> {
-        value.0
-    }
-}
-
-impl<K, V, S, D> Hash for HashableMap<K, V, S>
-where
-    K: Hash,
-    V: Hash,
-    S: BuildHasher<Hasher = D>,
-    D: Hasher + Default,
-{
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        let hash = self
-            .iter()
-            .map(|(k, v)| {
-                let mut hasher = D::default();
-                k.hash(&mut hasher);
-                v.hash(&mut hasher);
-                hasher.finish()
-            })
-            .fold(0, u64::wrapping_add);
-
-        state.write_u64(hash);
-    }
-}
-
-impl<K, V, S> PartialEq for HashableMap<K, V, S>
-where
-    K: Eq + Hash,
-    V: PartialEq,
-    S: BuildHasher,
-{
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl<K, V, S> Eq for HashableMap<K, V, S>
-where
-    K: Eq + Hash,
-    V: Eq,
-    S: BuildHasher,
-{
-}
-
-#[cfg(feature = "serde")]
-impl<K, V, S> serde::Serialize for HashableMap<K, V, S>
-where
-    HashMap<K, V, S>: serde::Serialize,
-{
-    fn serialize<Ser>(&self, serializer: Ser) -> Result<Ser::Ok, Ser::Error>
-    where
-        Ser: serde::Serializer,
-    {
-        self.0.serialize(serializer)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de, K, V, S> serde::Deserialize<'de> for HashableMap<K, V, S>
-where
-    HashMap<K, V, S>: serde::Deserialize<'de>,
-{
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        Ok(Self(HashMap::deserialize(deserializer)?))
-    }
-}
+use std::collections::HashMap;
+make_hashable_map!(HashMap);
 
 #[cfg(test)]
 pub(crate) mod tests {
