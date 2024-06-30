@@ -6,7 +6,7 @@ This crate provides simple wrappers `HashableMap` and `HashableSet` that impleme
 
 The `Hash` implementation of `HashableMap` and `HashableSet` respects the required property 
 
-```
+```text
 k1 == k2 -> hash(k1) == hash(k2)
 ```
 

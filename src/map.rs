@@ -3,6 +3,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+#[macro_export]
 macro_rules! make_hashable_map {
     ($hash_map_impl:ident) => {
         #[derive(Clone, Debug, Default)]
