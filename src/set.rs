@@ -64,6 +64,8 @@ macro_rules! make_hashable_set {
             D: Hasher + Default,
         {
             fn hash<H: Hasher>(&self, state: &mut H) {
+                state.write_usize(self.len());
+
                 let hash = self
                     .iter()
                     .map(|t| {
