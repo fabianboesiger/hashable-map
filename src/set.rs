@@ -90,6 +90,32 @@ where
 {
 }
 
+#[cfg(feature = "serde")]
+impl<T, S> serde::Serialize for HashableSet<T, S>
+where
+    HashSet<T, S>: serde::Serialize,
+{
+    fn serialize<Ser>(&self, serializer: Ser) -> Result<Ser::Ok, Ser::Error>
+    where
+        Ser: serde::Serializer,
+    {
+        self.0.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T, S> serde::Deserialize<'de> for HashableSet<T, S>
+where
+    HashSet<T, S>: serde::Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Ok(Self(HashSet::deserialize(deserializer)?))
+    }
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
     use std::hash::BuildHasherDefault;

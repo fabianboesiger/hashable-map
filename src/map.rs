@@ -94,6 +94,32 @@ where
 {
 }
 
+#[cfg(feature = "serde")]
+impl<K, V, S> serde::Serialize for HashableMap<K, V, S>
+where
+    HashMap<K, V, S>: serde::Serialize,
+{
+    fn serialize<Ser>(&self, serializer: Ser) -> Result<Ser::Ok, Ser::Error>
+    where
+        Ser: serde::Serializer,
+    {
+        self.0.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, K, V, S> serde::Deserialize<'de> for HashableMap<K, V, S>
+where
+    HashMap<K, V, S>: serde::Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Ok(Self(HashMap::deserialize(deserializer)?))
+    }
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
     use rand::prelude::SliceRandom;
